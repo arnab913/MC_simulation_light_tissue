@@ -1,0 +1,14 @@
+# MATLAB autosave
+*.asv
+
+# MATLAB data files
+*.mat
+
+# MATLAB figures
+*.fig
+*.svg
+
+# Experiment output folders
+results/
+output/
+24Nov_25/
