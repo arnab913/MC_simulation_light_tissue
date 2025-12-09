@@ -1,14 +1,43 @@
-# MATLAB autosave
+# ==============================
+# MATLAB temporary files
+# ==============================
+
+# Autosave files
 *.asv
 
-# MATLAB data files
+# MATLAB workspace data
 *.mat
 
-# MATLAB figures
+# Figures and plots
 *.fig
 *.svg
+*.png
+*.jpg
+*.tif
 
-# Experiment output folders
+# ==============================
+# Simulation results folders
+# ==============================
 results/
 output/
-24Nov_25/
+data/
+plots/
+temp/
+# Add any dated experiment folders
+20*/*/
+
+# ==============================
+# Editor / system files
+# ==============================
+*.log
+*.txt~         # temporary files
+*.bak
+*.swp
+Thumbs.db
+.DS_Store
+
+# ==============================
+# Git should track only code
+# ==============================
+src/
+README.md
