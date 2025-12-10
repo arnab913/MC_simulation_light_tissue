@@ -36,8 +36,4 @@ temp/
 Thumbs.db
 .DS_Store
 
-# ==============================
-# Git should track only code
-# ==============================
-src/
-README.md
+
