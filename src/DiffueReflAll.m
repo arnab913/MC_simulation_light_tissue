@@ -54,7 +54,7 @@ rows   = nRows;
 cols   = nCols;
 
 figure('Color','w','Position',[100 100 1800 900]);
-
+R_all = cell(nFiles,1);      % or zeros(Ny,Nx,nFiles) if Ny,Nx fixed
 %% -------------------- MAIN LOOP --------------------------
 for k = 1:nFiles
     % Load file
@@ -96,7 +96,8 @@ for k = 1:nFiles
         R(R <= 0) = NaN;
         R = log10(R);
     end
-
+    R_all{k} = R;            % <--- store reflectance map
+    %k=(row−1)×5+col; so, for example, row 3 col 1 (Dye2, no signal) is k = (3-1)*5 + 1 = 11, so R_all{11}
     %% ----- Plot -----
     subplot(rows, cols, k)
     contourf(xEdges(1:end-1), yEdges(1:end-1), R, 30,'LineColor','none'); % add ,'LineColor','none' if desired
@@ -107,6 +108,26 @@ for k = 1:nFiles
     clim([-5 5]);
     xlabel('x [cm]')
     ylabel('y [cm]')
+   %% plot Diffuse reflectance improvements after dye
+    R_nd   = R_all{1};
+    R_d1   = R_all{6};
+    R_d2   = R_all{11};
+    R_no_lin  = 10.^R_nd;     % back to linear
+    R_d1_lin  = 10.^R_d1;
+    R_d2_lin  = 10.^R_d2;
+    
+
+    diff_d1_nd = R_d1_lin - R_no_lin;
+    diff_d2_nd = R_d2_lin - R_no_lin;
+    figure;
+    subplot(1,2,1); surf(diff_d1_nd); axis image; colorbar;clim([0 5]);
+    title('Dye1 - No dye (Nosignal)');
+    
+    subplot(1,2,2); surf(diff_d2_nd); axis image; colorbar;clim([0 5]);
+    title('Dye2 - No dye (Nosignal)');
+    
+    colormap hot;
+
 
     %% ----- Title from filename -----
     params = parseFilename(files(k).name);
