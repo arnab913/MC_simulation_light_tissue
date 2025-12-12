@@ -17,27 +17,27 @@ allFiles   = dir(fullfile(dataFolder, '*.mat'));
 nAll       = numel(allFiles);
 
 us1 = zeros(nAll,1);
-ua3 = zeros(nAll,1);
+ua5 = zeros(nAll,1);
 for k = 1:nAll
     S = load(fullfile(allFiles(k).folder, allFiles(k).name), 'sim_info');
     us1(k) = S.sim_info.us1;
-    ua3(k) = S.sim_info.ua3;
+    ua5(k) = S.sim_info.ua5;
 end
 
-rowUs1 = [30, 10, 2];              % rows: No dye, 1L dye, 2L dye
-colUa3 = [0.05, 1, 7, 30, 100];    % cols: No ink, 1, 7, 30, 100
+rowUs1 = [30, 5, 2];              % rows: No dye, 1L dye, 2L dye
+colUa5 = [0.05, 1, 7, 30, 100];    % cols: No ink, 1, 7, 30, 100
 nRows = numel(rowUs1);
-nCols = numel(colUa3);
+nCols = numel(colUa5);
 
 ordered = repmat(allFiles(1), nRows*nCols, 1);
 idx = 0;
 for i = 1:nRows
     for j = 1:nCols
         idx = idx + 1;
-        mask = (us1 == rowUs1(i)) & (ua3 == colUa3(j));
+        mask = (us1 == rowUs1(i)) & (ua5 == colUa5(j));
         fidx = find(mask, 1);
         if isempty(fidx)
-            error('No file for us1=%g, ua3=%g', rowUs1(i), colUa3(j));
+            error('No file for us1=%g, ua3=%g', rowUs1(i), colUa5(j));
         end
         ordered(idx) = allFiles(fidx);
     end
@@ -217,11 +217,10 @@ for k = 1:nFiles
     Np = Diff_refl{k}.Nphot;
 
     title({
-        sprintf('L1: ua=%.3g  us=%.3g  n=%.2f', params.ua1, params.us1, params.n1)
-        sprintf('L2: ua=%.3g  us=%.3g  n=%.2f', params.ua2, params.us2, params.n2)
-        sprintf('L3: ua=%.3g  us=%.3g  n=%.2f', params.ua3, params.us3, params.n3)
-        sprintf('N_{surf} = %d / N_{tot} = %d', nR, Np)
-        }, 'FontSize', 7);
+    sprintf('us1=%.3g  us2=%.3g  us3=%.3g', params.us1, params.us2, params.us3)
+    sprintf('ua5=%.3g  us5=%.3g  n5=%.2f', params.ua5, params.us5, params.n5)
+    sprintf('N_{surf} = %d / N_{tot} = %d', nR, Np)
+    }, 'FontSize', 7);
 
 end
 sgtitle('Surface Diffuse Reflectance (log-scale)', 'FontSize', 14);
@@ -244,11 +243,10 @@ for k = 1:nFiles
     Np = Trans_all{k}.Nphot;
 
     title({
-        sprintf('L1: ua=%.3g  us=%.3g  n=%.2f', params.ua1, params.us1, params.n1)
-        sprintf('L2: ua=%.3g  us=%.3g  n=%.2f', params.ua2, params.us2, params.n2)
-        sprintf('L3: ua=%.3g  us=%.3g  n=%.2f', params.ua3, params.us3, params.n3)
-        sprintf('N_{trans} = %d / N_{tot} = %d', nT, Np)
-        }, 'FontSize', 7);
+    sprintf('us1=%.3g  us2=%.3g  us3=%.3g', params.us1, params.us2, params.us3)
+    sprintf('ua5=%.3g  us5=%.3g  n5=%.2f', params.ua5, params.us5, params.n5)
+    sprintf('N_{surf} = %d / N_{tot} = %d', nT, Np)
+    }, 'FontSize', 7);
 
 end
 sgtitle('Transmitted Photons (bottom + sides, log-scale)', 'FontSize', 14);
@@ -271,11 +269,10 @@ for k = 1:nFiles
     Np = Ink_all{k}.Nphot;
 
     title({
-        sprintf('L1: ua=%.3g  us=%.3g  n=%.2f', params.ua1, params.us1, params.n1)
-        sprintf('L2: ua=%.3g  us=%.3g  n=%.2f', params.ua2, params.us2, params.n2)
-        sprintf('L3: ua=%.3g  us=%.3g  n=%.2f', params.ua3, params.us3, params.n3)
-        sprintf('N_{ink} = %d / N_{tot} = %d', nI, Np)
-        }, 'FontSize', 7);
+    sprintf('us1=%.3g  us2=%.3g  us3=%.3g', params.us1, params.us2, params.us3)
+    sprintf('ua5=%.3g  us5=%.3g  n5=%.2f', params.ua5, params.us5, params.n5)
+    sprintf('N_{surf} = %d / N_{tot} = %d', nI, Np)
+    }, 'FontSize', 7);
 
 end
 sgtitle('Photons Trapped in Ink (log-scale)', 'FontSize', 14);
@@ -286,16 +283,14 @@ sgtitle('Photons Trapped in Ink (log-scale)', 'FontSize', 14);
 % =========================================================
 function params = parseFilename(fname)
 tokens = regexp(fname, ...
-    'ua1_(.*?)_us1_(.*?)_n1_(.*?)_ua2_(.*?)_us2_(.*?)_n2_(.*?)_ua3_(.*?)_us3_(.*?)_n3_(.*?).mat', ...
+    'us1_(.*?)_us2_(.*?)_us3_(.*?)_ua5_(.*?)_us5_(.*?)_n5_(.*?).mat', ...
     'tokens');
 tokens = tokens{1};
-params.ua1 = str2double(tokens{1});
-params.us1 = str2double(tokens{2});
-params.n1  = str2double(tokens{3});
-params.ua2 = str2double(tokens{4});
-params.us2 = str2double(tokens{5});
-params.n2  = str2double(tokens{6});
-params.ua3 = str2double(tokens{7});
-params.us3 = str2double(tokens{8});
-params.n3  = str2double(tokens{9});
+params.us1 = str2double(tokens{1});   % top tissue scattering
+params.us2 = str2double(tokens{2});   % middle tissue scattering
+params.us3 = str2double(tokens{3});   % bottom tissue scattering
+params.ua5 = str2double(tokens{4});   % ink absorption in layer 5
+params.us5 = str2double(tokens{5});   % ink scattering in layer 5
+params.n5  = str2double(tokens{6});   % ink refractive index (or global n)
 end
+
