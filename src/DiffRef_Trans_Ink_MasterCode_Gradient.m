@@ -234,7 +234,7 @@ for k = 1:nFiles
     axis equal tight;
     set(gca,'YDir','normal');
     colorbar;
-    clim([-5 5]);
+    clim([-1 1]);
     xlabel('x [cm]');
     ylabel('y [cm]');
 
@@ -260,7 +260,7 @@ for k = 1:nFiles
     axis equal tight;
     set(gca,'YDir','normal');
     colorbar;
-    clim([-5 5]);
+    clim([-1 1]);
     xlabel('x [cm]');
     ylabel('y [cm]');
 
@@ -298,7 +298,7 @@ for kk = ks
     R_smooth = smoothdata(R_line, 'sgolay', 3);
 
     % ---- keep only x >= 0 ----
-    idxPos   = xCenters >= 0;
+    idxPos   = xCenters >= 0; % xCenters >= 0
     xPos     = xCenters(idxPos);
     R_pos    = R_smooth(idxPos);
 
@@ -329,6 +329,42 @@ title('Diffuse reflectance along central x-axis (0 \leq x, y \approx 0)');
 legend('show');
 grid on;
 
+%% No dye dye 1 dye 2 layers
+figure('Color','w','Position',[100 100 1800 900]);
+ks   = [1 6 11];
+rows = 1; cols = numel(ks);
+
+for i = 1:numel(ks)
+    k = ks(i);                   % actual case index
+    subplot(rows, cols, i);
+
+    RR = Diff_refl{k}.map;       % already log10(R)
+    RR = 10.^RR;% for lineaar scaling, for log just comment this line
+
+    contourf(xEdges(1:end-1), yEdges(1:end-1), RR', 30, 'LineColor','none');
+    axis equal tight;
+    set(gca,'YDir','normal');%,,'YScale','log'
+
+    cb = colorbar;
+    ylabel(cb, 'log_{10} diffuse reflectance');
+
+    % Choose appropriate log range; adjust to your data
+    % Example: reflectance between 10^-5 and 10^0 -> log10 in [-5, 0]
+    clim([0 10]);    % or e.g. [-4 -1], depending on RR range
+
+    xlabel('x [cm]');
+    ylabel('y [cm]');
+
+
+    nR = Diff_refl{k}.nPhot;
+    Np = Diff_refl{k}.Nphot;
+    title({
+        sprintf('Case k = %d', k)
+        sprintf('N_{surf} = %d / N_{tot} = %d', nR, Np)
+    }, 'FontSize', 7);
+end
+
+sgtitle('Surface Diffuse Reflectance (log_{10} scale)', 'FontSize', 14);
 
 
 %% ===================== END MAIN ==========================
