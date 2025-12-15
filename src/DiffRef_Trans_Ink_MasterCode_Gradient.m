@@ -5,7 +5,8 @@
 clear; clc;
 
 % -------------------- USER SETTINGS ----------------------
-dataFolder = pwd;      % folder containing all .mat files
+%dataFolder = pwd;      % folder containing all .mat files
+dataFolder = ("D:\MC SImulation data\Dec_12_25");
 xMin = -7.5; xMax = 7.5;
 yMin = -7.5; yMax = 7.5;
 zMin = 0;    zMax = 5;      % top z = 0, bottom z = 5 (adjust if needed)
@@ -340,55 +341,48 @@ sgtitle('Photons Trapped in Ink (log-scale)', 'FontSize', 14);
 
 %% gradient model diffuse reflectance at x axis, y=0
 
-ks = [1 6 11];   % the indices you care about
+ks = [1 6 11];
 figure; hold on;
 
 for kk = ks
-    D  = Diff_refl{kk};       % struct with fields map, nPhot, Nphot
-    RR = D.map;               % Nx x Ny
+    RR = Diff_refl{kk}.map;
 
-    % Bin centers
     xCenters = (xEdges(1:end-1) + xEdges(2:end)) / 2;
     yCenters = (yEdges(1:end-1) + yEdges(2:end)) / 2;
 
-    % Central y = 0 line
-    [~, iy0] = min(abs(yCenters - 0));
-    R_line = RR(:, iy0);      % Nx x 1
+    [X,Y] = meshgrid(xCenters, yCenters);
+    Rmap  = RR';
+    Rrad  = sqrt(X.^2 + Y.^2);
 
-    % Smooth line
-    R_smooth = smoothdata(R_line, 'sgolay', 30);
+    dr = mean(diff(xCenters));
+    rBins = 0:dr:max(xCenters);
+    rCenters = (rBins(1:end-1) + rBins(2:end)) / 2;
 
-    % ---- keep only x >= 0 ----
-    idxPos   = xCenters >= 0; % xCenters >= 0
-    xPos     = xCenters(idxPos);
-    R_pos    = R_smooth(idxPos);
+    R_avg = nan(size(rCenters));
+    for i = 1:length(rCenters)
+        mask = (Rrad >= rBins(i)) & (Rrad < rBins(i+1));
+        vals = Rmap(mask);
+        if ~isempty(vals)
+            R_avg(i) = mean(vals,'omitnan');
+        end
+    end
 
-    % Prepare data for fit on positive side
-    x = xPos(:);
-    y = R_pos(:);             % already log10(R) if that was applied earlier
-    valid = isfinite(x) & isfinite(y);
-    xFit = x(valid);
-    yFit = y(valid);
+    R_avg = smoothdata(R_avg,'sgolay',1);
 
-    % Polynomial fit (here degree 6 as in your code; use 3 for cubic)
-    p = polyfit(xFit, yFit, 4);
-    yPoly = polyval(p, xPos);
-    % 
-    % % Plot data and fit only for x >= 0
-    plot(xPos, R_pos, '.-', 'DisplayName', sprintf('k = %d (data)', kk));
-    % plot(xPos, yPoly, '--', 'LineWidth', 1.5, ...
-    %      'DisplayName', sprintf('k = %d (poly)', kk));
+    plot(rCenters, R_avg, 'LineWidth', 2, ...
+        'DisplayName', sprintf('k = %d', kk));
 end
 
-xlabel('x (cm)');
+xlabel('Radial distance r (cm)');
 if useLog
     ylabel('log_{10} diffuse reflectance');
 else
     ylabel('Diffuse reflectance');
 end
-title('Diffuse reflectance along central x-axis (0 \leq x, y \approx 0)');
+title('Azimuthally averaged diffuse reflectance R(r)');
 legend('show');
 grid on;
+
 
 %% No dye dye 1 dye 2 layers
 figure('Color','w','Position',[100 100 1800 900]);
