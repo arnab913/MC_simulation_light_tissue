@@ -184,7 +184,67 @@ for k = 1:nFiles
     idx_tissue     = ~idx_classified;
     n_tissue       = sum(idx_tissue);    %#ok<NASGU>  % if you want to inspect later
 
+
+
+
+%% Mean pathlength per layer
+% --------------------------------------------------
+% 5) Mean photon pathlength per layer (Li estimation)
+% --------------------------------------------------
+
+% Final depth of photons
+z_out = scatter_stat(:,6);
+s_tot = scatter_stat(:,7);   % total pathlength per photon
+
+% Define layer boundaries (cm)
+zL = [0.0, 0.3, 0.4, 0.5, inf];   % 3 dye layers + bulk
+
+nLayers = numel(zL)-1;
+Li = zeros(nLayers,1);          % accumulated pathlength
+Ni = zeros(nLayers,1);          % photon counts
+
+for p = 1:Nphot
+
+    zf = z_out(p);
+    s  = s_tot(p);
+
+    % Skip photons that never entered tissue (rare)
+    if s <= 0
+        continue
+    end
+
+    % Vertical distance traversed in each layer
+    dz = zeros(nLayers,1);
+
+    for j = 1:nLayers
+        z1 = zL(j);
+        z2 = zL(j+1);
+
+        % overlap of photon path with layer
+        dz(j) = max(0, min(zf, z2) - z1);
+    end
+
+    dz_tot = sum(dz);
+
+    if dz_tot > 0
+        % distribute total pathlength proportionally
+        Li = Li + s * (dz / dz_tot);
+        Ni = Ni + (dz > 0);
+    end
 end
+
+% Mean pathlength per layer
+Li_mean = Li ./ max(Ni,1);
+
+% Store
+LayerPath{k} = struct( ...
+    'Li', Li_mean, ...
+    'zBounds', zL );
+
+end
+
+
+
 
 %% ================== PLOTTING ============================
 % grid size for subplots
@@ -260,9 +320,10 @@ for k = 1:nFiles
     axis equal tight;
     set(gca,'YDir','normal');
     colorbar;
-    clim([-1 1]);
-    xlabel('x [cm]');
-    ylabel('y [cm]');
+    colormap turbo;
+    clim([-20 1]);
+    xlabel('x [cm]'); xlim([-5 5]);
+    ylabel('y [cm]'); ylim([-5 5]);
 
         params = parseFilename(files(k).name);
     nI = Ink_all{k}.nPhot;
@@ -295,7 +356,7 @@ for kk = ks
     R_line = RR(:, iy0);      % Nx x 1
 
     % Smooth line
-    R_smooth = smoothdata(R_line, 'sgolay', 3);
+    R_smooth = smoothdata(R_line, 'sgolay', 30);
 
     % ---- keep only x >= 0 ----
     idxPos   = xCenters >= 0; % xCenters >= 0
@@ -312,11 +373,11 @@ for kk = ks
     % Polynomial fit (here degree 6 as in your code; use 3 for cubic)
     p = polyfit(xFit, yFit, 4);
     yPoly = polyval(p, xPos);
-
-    % Plot data and fit only for x >= 0
+    % 
+    % % Plot data and fit only for x >= 0
     plot(xPos, R_pos, '.-', 'DisplayName', sprintf('k = %d (data)', kk));
-    plot(xPos, yPoly, '--', 'LineWidth', 1.5, ...
-         'DisplayName', sprintf('k = %d (poly)', kk));
+    % plot(xPos, yPoly, '--', 'LineWidth', 1.5, ...
+    %      'DisplayName', sprintf('k = %d (poly)', kk));
 end
 
 xlabel('x (cm)');
@@ -365,6 +426,27 @@ for i = 1:numel(ks)
 end
 
 sgtitle('Surface Diffuse Reflectance (log_{10} scale)', 'FontSize', 14);
+
+
+%% plot mean pathlengths in each layers 
+L0 = LayerPath{1}.Li;
+L1 = LayerPath{6}.Li;
+L2 = LayerPath{11}.Li;
+
+figure;
+
+B = [L0(:), L1(:), L2(:)];   % layers × conditions
+bar(B);
+
+legend({'No dye','1-layer dye','2-layer dye'}, 'Location','best');
+xlabel('Layer');
+ylabel('Mean photon pathlength [cm]');
+
+set(gca,'XTickLabel',{'L1','L2','L3','Bulk'});
+title('Photon pathlength redistribution due to dye');
+
+grid on;
+
 
 
 %% ===================== END MAIN ==========================
