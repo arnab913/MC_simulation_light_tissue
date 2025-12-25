@@ -6,7 +6,7 @@ clear; clc;
 
 % -------------------- USER SETTINGS ----------------------
 %dataFolder = pwd;      % folder containing all .mat files
-dataFolder = ("D:\MC SImulation data\Dec_12_25");
+dataFolder = ("E:\MC SImulation data\Data_Gradient_tissue_123cmlayers");
 xMin = -7.5; xMax = 7.5;
 yMin = -7.5; yMax = 7.5;
 zMin = 0;    zMax = 5;      % top z = 0, bottom z = 5 (adjust if needed)
@@ -26,7 +26,7 @@ for k = 1:nAll
 end
 
 rowUs1 = [30, 5, 2];              % rows: No dye, 1L dye, 2L dye
-colUa5 = [0.05, 1, 7, 30, 100];    % cols: No ink, 1, 7, 30, 100
+colUa5 = [0.05, 1, 7, 30, 150];    % cols: No ink, 1, 7, 30, 100
 nRows = numel(rowUs1);
 nCols = numel(colUa5);
 
@@ -261,7 +261,7 @@ xEdges = linspace(-Lx/2, Lx/2, Nx+1);
 yEdges = linspace(-Ly/2, Ly/2, Ny+1);
 
 %% 1) Diffuse Reflectance maps
-figure('Color','w','Position',[100 100 1800 900]);
+figure; clf; set(gcf,'Color','w','Position',[100 100 1800 900]);
 for k = 1:nFiles
     subplot(rows, cols, k);
     RR = Diff_refl{k}.map;
@@ -287,7 +287,7 @@ end
 sgtitle('Surface Diffuse Reflectance (log-scale)', 'FontSize', 14);
 
 %% 2) Transmitted maps (bottom + sides)
-figure('Color','w','Position',[100 100 1800 900]);
+figure; clf; set(gcf,'Color','w','Position',[100 100 1800 900]);
 for k = 1:nFiles
     subplot(rows, cols, k);
     Tmap = Trans_all{k}.map;
@@ -313,7 +313,7 @@ end
 sgtitle('Transmitted Photons (bottom + sides, log-scale)', 'FontSize', 14);
 
 %% 3) Trapped-in-ink maps
-figure('Color','w','Position',[100 100 1800 900]);
+figure; clf; set(gcf,'Color','w','Position',[100 100 1800 900]);
 for k = 1:nFiles
     subplot(rows, cols, k);
     Imap = Ink_all{k}.map;
@@ -340,52 +340,48 @@ end
 sgtitle('Photons Trapped in Ink (log-scale)', 'FontSize', 14);
 
 %% gradient model diffuse reflectance at x axis, y=0
-
 ks = [1 6 11];
 figure; hold on;
 
+xCenters = (xEdges(1:end-1) + xEdges(2:end)) / 2;
+yCenters = (yEdges(1:end-1) + yEdges(2:end)) / 2;
+[X,Y] = meshgrid(xCenters, yCenters);
+Rrad  = sqrt(X.^2 + Y.^2);
+
+dr = mean(diff(xCenters));
+rBins = 0:dr:max(xCenters);
+rCenters = (rBins(1:end-1) + rBins(2:end)) / 2;
+
 for kk = ks
-    RR = Diff_refl{kk}.map;
+    RRlog = Diff_refl{kk}.map;     % log10(R)
+    RRlin = 10.^RRlog;             % linear reflectance per pixel-bin
 
-    xCenters = (xEdges(1:end-1) + xEdges(2:end)) / 2;
-    yCenters = (yEdges(1:end-1) + yEdges(2:end)) / 2;
-
-    [X,Y] = meshgrid(xCenters, yCenters);
-    Rmap  = RR';
-    Rrad  = sqrt(X.^2 + Y.^2);
-
-    dr = mean(diff(xCenters));
-    rBins = 0:dr:max(xCenters);
-    rCenters = (rBins(1:end-1) + rBins(2:end)) / 2;
-
-    R_avg = nan(size(rCenters));
-    for i = 1:length(rCenters)
+    R_mean = nan(size(rCenters));
+    for i = 1:numel(rCenters)
         mask = (Rrad >= rBins(i)) & (Rrad < rBins(i+1));
-        vals = Rmap(mask);
+        vals = RRlin(mask);
         if ~isempty(vals)
-            R_avg(i) = mean(vals,'omitnan');
+            R_mean(i) = mean(vals,'omitnan');    % mean linear reflectance
         end
     end
 
-    R_avg = smoothdata(R_avg,'sgolay',1);
+    plot(rCenters,R_mean, 'LineWidth', 1, 'DisplayName', sprintf('k=%d',kk));
+   set(gca,'YScale','log')
 
-    plot(rCenters, R_avg, 'LineWidth', 2, ...
-        'DisplayName', sprintf('k = %d', kk));
 end
 
-xlabel('Radial distance r (cm)');
-if useLog
-    ylabel('log_{10} diffuse reflectance');
-else
-    ylabel('Diffuse reflectance');
-end
-title('Azimuthally averaged diffuse reflectance R(r)');
-legend('show');
+xlabel('Distance r (cm)');
+ylabel('log_{10} R (a.u.)');
+title('MC radial reflectance (linear average, then log)');
+legend show;
 grid on;
+%xlim([0 3.5]);
+
+
 
 
 %% No dye dye 1 dye 2 layers
-figure('Color','w','Position',[100 100 1800 900]);
+figure; clf; set(gcf,'Color','w','Position',[100 100 1800 900]);
 ks   = [1 6 11];
 rows = 1; cols = numel(ks);
 
@@ -401,15 +397,17 @@ for i = 1:numel(ks)
     set(gca,'YDir','normal');%,,'YScale','log'
 
     cb = colorbar;
+    colormap hot;
     ylabel(cb, 'log_{10} diffuse reflectance');
 
     % Choose appropriate log range; adjust to your data
     % Example: reflectance between 10^-5 and 10^0 -> log10 in [-5, 0]
-    clim([0 10]);    % or e.g. [-4 -1], depending on RR range
+    clim([0 300]);    % or e.g. [-4 -1], depending on RR range
 
     xlabel('x [cm]');
     ylabel('y [cm]');
-
+    xlim([-3.5 3.5]);
+    ylim([-3.5 3.5]);
 
     nR = Diff_refl{k}.nPhot;
     Np = Diff_refl{k}.Nphot;
@@ -440,6 +438,88 @@ set(gca,'XTickLabel',{'L1','L2','L3','Bulk'});
 title('Photon pathlength redistribution due to dye');
 
 grid on;
+
+
+%% 3) Trapped-in-ink PHOTON COUNT maps (files 5, 10, 15 only)
+
+filesToPlot = [5 10 15];
+figure; clf; set(gcf,'Color','w','Position',[100 100 1800 900]);
+
+customNames = {
+    'No dye, \mu_a = 100 cm^{-1}'
+    '1 layer dye, \mu_a = 100 cm^{-1}'
+    '2 layer dye, \mu_a = 100 cm^{-1}'
+};
+
+for i = 1:numel(filesToPlot)
+
+    k = filesToPlot(i);          % actual file index
+    subplot(1,3,i);
+
+    fileLabel = customNames{i};  % ✅ FIXED
+
+    % --- Load file ---
+    S = load(fullfile(files(k).folder, files(k).name));
+    scatter_stat = S.scatter_stat;
+    t_model      = S.t_model;
+
+    % --- Photon exit positions ---
+    x_ot = scatter_stat(:,4);
+    y_ot = scatter_stat(:,5);
+    z_ot = scatter_stat(:,6);
+
+    % --- Ink geometry (same as MC) ---
+    ink_mask = (x_ot >= -7.5) & (x_ot <= 7.5) & ...
+               ((y_ot - 0).^2 + (z_ot - 1.0).^2 <= 0.3^2);
+
+    % --- Exclude escaped photons ---
+    idx_surface = (z_ot <= zMin);
+    idx_trans   = (z_ot >= zMax) | ...
+                  (x_ot <= xMin) | (x_ot >= xMax) | ...
+                  (y_ot <= yMin) | (y_ot >= yMax);
+
+    ink_trapped = ink_mask & ~idx_surface & ~idx_trans;
+
+    % --- Coordinates of trapped photons ---
+    x_ink = x_ot(ink_trapped);
+    y_ink = y_ot(ink_trapped);
+
+    % --- Photon COUNT map ---
+    CountMap = zeros(Nx, Ny);
+    [~,~,~,ix,iy] = histcounts2(x_ink, y_ink, xEdges, yEdges);
+
+    for p = 1:numel(ix)
+        if ix(p) > 0 && iy(p) > 0
+            CountMap(ix(p), iy(p)) = CountMap(ix(p), iy(p)) + 1;
+        end
+    end
+
+    % --- Plot ---
+    contourf(xEdges(1:end-1), yEdges(1:end-1), CountMap', ...
+             30, 'LineColor','none');
+    axis equal tight;
+    set(gca,'YDir','normal');
+    colormap turbo;
+    colorbar;
+    caxis([0 2000]);
+
+    xlabel('x [cm]');
+    ylabel('y [cm]');
+    xlim([-2 2]);
+    ylim([-2 2]);
+
+    % --- Title info ---
+    nI = sum(ink_trapped);
+    Np = size(scatter_stat,1);
+
+    title({
+        fileLabel
+        sprintf('N_{ink}/N_{tot} = %.2d', nI/ Np)
+    },'FontName','Arial','FontSize', 10);
+
+end
+
+%sgtitle('Photon count trapped inside ink region', 'FontSize', 14);
 
 
 
