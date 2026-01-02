@@ -7,9 +7,17 @@
 %    and (for banana) B_wds and B_ds
 % ==========================================================
 clear; clc; close all;
+set(groot, ...
+    'defaultAxesFontName','Arial', ...
+    'defaultAxesFontSize',10, ...
+    'defaultTextFontName','Arial', ...
+    'defaultTextFontSize',10, ...
+    'defaultColorbarFontName','Arial', ...
+    'defaultColorbarFontSize',10);
+
 
 %% -------------------- USER SETTINGS ----------------------
-dataFolder = "D:\MC SImulation data\vox_gradient_tissue123cmlayers";
+dataFolder = "E:\MC SImulation data\vox_gradient_tissue123cmlayers";
 
 xMin = -7.5; xMax = 7.5;
 yMin = -7.5; yMax = 7.5;
@@ -428,7 +436,7 @@ for i = 1:numel(ks)
     colormap hot;
 
     % colorbar label consistent with what you plot
-    ylabel(cb, 'Diffuse reflectance R (a.u.)');      % for linear RR
+    ylabel(cb, 'R (a.u.)');      % for linear RR
     % ylabel(cb, 'log_{10}(R)');                     % if you plot RRlog instead
 
     % --- set color limits consistent with what you plot ---
@@ -437,19 +445,19 @@ for i = 1:numel(ks)
 
     xlabel('x (cm)');
     ylabel('y (cm)');
-    xlim([-3.5 3.5]);
-    ylim([-3.5 3.5]);
+    xlim([-2.5 2.5]);
+    ylim([-2.5 2.5]);
 
     nR = Diff_refl{k}.nPhot;
     Np = Diff_refl{k}.Nphot;
 
     title({
         customNames{i}
-        sprintf('N_{surf} = %d / N_{tot} = %d', nR, Np)
+       % sprintf('N_{surf}/N_{tot} = %.02d', nR/Np)
     },'Fontname', 'Arial', 'FontSize', 10);
 end
 
-sgtitle('Surface Diffuse Reflectance', 'FontSize', 14);
+%sgtitle('Surface Diffuse Reflectance', 'FontSize', 14);
 
 
 
@@ -536,8 +544,8 @@ for i = 1:numel(filesToPlot)
     colorbar;
     caxis([0 2000]);
 
-    xlabel('x [cm]');
-    ylabel('y [cm]');
+    xlabel('x (cm)');
+    ylabel('y (cm)');
     xlim([-2 2]);
     ylim([-2 2]);
 
@@ -547,7 +555,7 @@ for i = 1:numel(filesToPlot)
 
     title({
         fileLabel
-        sprintf('N_{ink}/N_{tot} = %.2d', nI/ Np)
+        sprintf('(a) N_{i}/N_{t} = %.2d', nI/ Np)
     },'FontName','Arial','FontSize', 10);
 
 end
@@ -621,9 +629,9 @@ figure('Color','w','Position',[100 100 1400 400]);
 tiledlayout(1,3,'Padding','compact','TileSpacing','compact');
 
 customNames = {
-    'No dye'
-    '1 layer dye'
-    '2 layer dye'
+    '(a) No dye'
+    '(b) 1 layer dye'
+    '(c) 2 layer dye'
 };
 
 for ii = 1:numel(ks)
@@ -657,11 +665,17 @@ for ii = 1:numel(ks)
     Bxz = flipud(fliplr(log10(Bxz + eps)));
 
     % ---- plot ----
-   nexttile;
+nexttile;
 contourf(xCenters, zCenters, Bxz, 30, 'LineColor','none');
 axis image;
 set(gca,'YDir','normal');
+
 colormap turbo;
+
+% cb = colorbar;
+% cb.Label.String = 'log_{10}(I)';
+% cb.Label.Interpreter = 'tex';
+% cb.FontSize = 10;
 
 title(customNames{ii}, 'Interpreter','tex');
 
@@ -670,22 +684,32 @@ ylim([2.5 5]);
 xlabel('x (cm)');
 ylabel('z (cm)');
 
-end
+set(gca,'FontName','Arial','FontSize',10);
 
-sgtitle('Banana profiles', 'FontSize', 14);
+
+end
+cb = colorbar;
+cb.Label.String = 'log_{10}(I)';
+cb.Layout.Tile = 'east';
 set(gca,'FontName','Arial','FontSize', 10);
+%sgtitle('Banana profiles', 'FontSize', 14);
+%set(gca,'FontName','Arial','FontSize', 10);
 
 
 %% Differential XZ banana: ink absorption effect (only files 5,10,15)
 dy = 2;
 filesToPlot = [5 10 15];
 
+% customNames = {
+%     '(d) No dye, \mu_a = 100 cm^{-1}'
+%     '(e) 1 layer dye \mu_a = 100 cm^{-1}'
+%     '(f) 2 layer dye \mu_a = 100 cm^{-1}'
+% };
 customNames = {
-    'No dye, \mu_a = 100 cm^{-1}'
-    '1 layer dye, \mu_a = 100 cm^{-1}'
-    '2 layer dye, \mu_a = 100 cm^{-1}'
+    '(d) No dye with signal '
+    '(e) 1 layer dye with signal '
+    '(f) 2 layer dye with signal '
 };
-
 % --- physical dimensions (cm) ---
 Lx = 15;   % cm  (so x goes -7.5 to +7.5)
 Lz = 5;    % cm  (depth 0 to 5)
@@ -711,15 +735,20 @@ for i = 1:numel(filesToPlot)
     iy0 = round(ny/2);
     ys  = max(1,iy0-dy) : min(ny,iy0+dy);
 
-    % slab-averaged XZ
-    Bref_xz = squeeze(mean(Bref(:,ys,:),2));
-    B_xz    = squeeze(mean(B(:,ys,:),2));
+   Bref_xz = squeeze(mean(Bref(:,ys,:),2));
+   B_xz = squeeze(mean(B(:,ys,:),2));
 
-    % log-difference
-    Delta = log10(B_xz + eps) - log10(Bref_xz + eps);
+% --- log fluence ratio ---
+Delta = - log10(B_xz + eps) + log10(Bref_xz + eps);
+%Delta = - (B_xz + eps) + (Bref_xz + eps);
+% --- mask low-signal regions (KEY STEP) ---
+% I0 = Bref_xz;   % reference fluence
+% mask = I0 > (0.001 * max(I0(:)));   % 1% threshold
+% Delta(~mask) = NaN;
 
-    % orientation (keep your preferred orientation)
-    Delta = rot90(Delta, -1);
+% --- rotate for display ---
+Delta = rot90(Delta, -1);
+
     Delta = flipud(Delta);
 
     % --- centered physical axes ---
@@ -730,28 +759,33 @@ for i = 1:numel(filesToPlot)
     z = linspace(0,    Lz,    Nz);   % cm, surface at z=0
 
     nexttile(t);
-    contourf(x, z, Delta, 20, 'LineColor','none');
+    %contourf(x, z, Delta, 20, 'LineColor','none');
+    contourf(x,z,Delta, 20, 'LineColor','none');
+    %set(gca,'Color',[0.9 0.9 0.9]);   % light gray background
+
     axis image;
     set(gca,'YDir','normal');     % depth increases downward
-    caxis([-1 0]);
-
+    caxis([7.5 11]);
+    colormap turbo;
     % make axes uniform across tiles
-    xlim([-Lx/2, Lx/2]);
-    ylim([0, Lz]);
+    xlim([-3 3]);
+    ylim([2.5 5]);
+    % xlim([-Lx/2, Lx/2]);
+    % ylim([2.5, Lz]);
 
-    xlabel('Lateral distance x (cm)');
-    if i == 1
-        ylabel('Depth z (cm)');
-    end
+    xlabel('x (cm)');
+   % if i == 1
+        ylabel('z (cm)');
+  %  end
 
     title(customNames{i}, 'Interpreter','tex');
 end
 
-cb = colorbar;
-cb.Label.String = '\Delta log_{10}(Intensity)';
-cb.Layout.Tile = 'east';
-set(gca,'FontName','Arial','FontSize', 10);
-sgtitle('Photon intensity for ink–dye effect');
+%cb = colorbar;
+%cb.Label.String = '\Delta log_{10}(I)';
+%cb.Layout.Tile = 'east';
+%set(gca,'FontName','Arial','FontSize', 10);
+%sgtitle('Photon intensity for ink–dye effect');
 
 %% =========================================================
 %  Depth-wise fluence F(z) for cases 1, 6, 11
