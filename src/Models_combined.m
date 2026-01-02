@@ -224,25 +224,25 @@ figure('Color','w');
 % --- (B1) MC subplot ---
 subplot(1,3,1); hold on;
 for i = 1:numel(ks)
-    plot(rCenters, R_MC(i,:), 'LineWidth', 1.2, ...
+    plot(rCenters, R_MC(i,:), 'LineWidth', 1, ...
         'DisplayName', sprintf('k=%d', ks(i)));
 end
 set(gca,'YScale','log'); grid on;
 xlabel('r (cm)'); ylabel('R (a.u.)');
 axis square;
-title('MC');
+title('(a) MC');
 xlim([0 6]);
 set(gca,'FontName','Arial','FontSize',10);
 legend('show','Location','southwest');
 
 % --- (B2) Farrell subplot ---
 subplot(1,3,2); hold on;
-plot(r_farrell, R_Farrell(1,:), 'k-', 'LineWidth', 1.5, 'DisplayName','No dye');
-plot(r_farrell, R_Farrell(2,:), 'r-', 'LineWidth', 1.5, 'DisplayName','Dye 1');
-plot(r_farrell, R_Farrell(3,:), 'b-', 'LineWidth', 1.5, 'DisplayName','Dye 2');
+plot(r_farrell, R_Farrell(1,:), 'k-', 'LineWidth', 1, 'DisplayName','No dye');
+plot(r_farrell, R_Farrell(2,:), 'r-', 'LineWidth', 1, 'DisplayName','Dye 1');
+plot(r_farrell, R_Farrell(3,:), 'b-', 'LineWidth', 1, 'DisplayName','Dye 2');
 set(gca,'YScale','log'); grid on;
 xlabel('r (cm)'); ylabel('R (a.u.)');
-title('Farrell dipole');
+title('(b) Farrell dipole');
 axis square;
 xlim([0 6]);
 set(gca,'FontName','Arial','FontSize',10);
@@ -251,12 +251,12 @@ legend('show','Location','southwest');
 % --- (B3) Schmitt subplot ---
 subplot(1,3,3); hold on;
 for i = 1:numel(ks)
-    plot(rCenters, R_Schmitt(i,:), 'LineWidth', 1.2, ...
+    plot(rCenters, R_Schmitt(i,:), 'LineWidth', 1, ...
         'DisplayName', labels_sch{i});
 end
 set(gca,'YScale','log'); grid on;
 xlabel('r (cm)'); ylabel('R (a.u.)');
-title('Schmitt layered');
+title('(c) Schmitt layered');
 axis square;
 xlim([0 6]);
 set(gca,'FontName','Arial','FontSize',10);
